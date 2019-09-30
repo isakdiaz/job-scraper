@@ -2,8 +2,15 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import numpy as np
+import json 
 
+# First run scrape_links.py to save the job description links that have been scraped from the website.
+# All job listings from the same company will have the two digit source number preceding the ID.
 LINK_LOCATION = "assets/job_links.npy"
+SOURCE_WEBSITE = "linkedin"
+SOURCE_NUMBER = 99
+ID_SIG_FIGS = 6
+
 job_links = np.load(LINK_LOCATION)
 
 print("Processing {} links from {}".format(len(job_links), LINK_LOCATION))
@@ -13,6 +20,9 @@ print("Processing {} links from {}".format(len(job_links), LINK_LOCATION))
 # url = "https://www.linkedin.com/jobs/view/sponsorship-coordinator-at-live-nation-entertainment-1489576317?refId=bbeb146e-4308-4316-a9b8-31fb9e75d35c&position=1&pageNum=0&trk=guest_job_search_job-result-card_result-card_full-click"
 # url = "https://www.linkedin.com/jobs/view/software-engineer-web-developer-javascript-java-at-sprinklr-1484916244?refId=e6bd7943-e205-4d7e-bdec-f83b19dbf3c1&trk=guest_job_details_topcard_title"
 numJobs = 0
+jobsJSON = {}
+jobsJSON['listings'] = []
+
 for url in job_links:
     # print(url)
     page = requests.get(url)
@@ -22,6 +32,9 @@ for url in job_links:
     position = soup.find_all("h1", class_='topcard__title')[0].get_text()
     # company = soup.find_all("a", class_='topcard__org-name-link')[0].get_text()
     company = soup.find_all("span", class_='topcard__flavor')[0].get_text()
+    hash_multipler = 10 ** ID_SIG_FIGS
+    databaseId = int(hash(position+company) % hash_multipler + SOURCE_NUMBER * hash_multipler)
+
     location = soup.find_all("span", class_='topcard__flavor topcard__flavor--bullet')[0].get_text()
     city = location.split(",")[0].strip()
     country = location.split(",")[1].strip()
@@ -50,9 +63,28 @@ for url in job_links:
 
     epoch = round(time.time()) - (timeInt * timeMultiplier)
     numJobs += 1
-    print(description)
+    # print(description)
     # print(tags)
-    # print(position)
+    print(position)
 
+    jobsJSON['listings'].append({
+        "source": "linkedin",
+        "id": databaseId,
+        "position": position,
+        "company": company,
+        "city": city,
+        "country": country,
+        "tags": tags,
+        "category": category,
+        "epoch": epoch,
+        "url": url,
+        "description": str(description)
+    })
 
-print("Completed processing {} Jobs!".format(numJobs))
+    print('Job ID', databaseId)
+    
+with open('assets/data.json', 'w') as outfile:
+    json.dump(jobsJSON, outfile)
+
+print("Completed processing {} jobs from {}!".format(numJobs, SOURCE_WEBSITE))
+

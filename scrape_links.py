@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import time
 import numpy as np
 
+# First run this file with the LinkedIN job search url. Make sure to be signed out or the page that the requests packages accesses will be different
 
 url = "https://www.linkedin.com/jobs/search/?currentJobId=1365739043&keywords=visa%20sponsor"
 page = requests.get(url)

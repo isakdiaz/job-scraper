@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import numpy as np
+import json
 
 
 url = "https://www.linkedin.com/jobs/search/?currentJobId=1365739043&keywords=visa%20sponsor"
@@ -63,5 +64,6 @@ else:
     ValueError("Could not parse time format from String!")
 
 epoch = round(time.time()) - (timeInt * timeMultiplier)
+
 
 print(position)
