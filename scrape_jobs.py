@@ -8,7 +8,7 @@ import json
 # All job listings from the same company will have the two digit source number preceding the ID.
 LINK_LOCATION = "assets/job_links.npy"
 SOURCE_WEBSITE = "linkedin"
-SOURCE_NUMBER = 99
+SOURCE_NUMBER = 55
 ID_SIG_FIGS = 6
 
 job_links = np.load(LINK_LOCATION)
@@ -35,9 +35,28 @@ for url in job_links:
     hash_multipler = 10 ** ID_SIG_FIGS
     databaseId = int(hash(position+company) % hash_multipler + SOURCE_NUMBER * hash_multipler)
 
-    location = soup.find_all("span", class_='topcard__flavor topcard__flavor--bullet')[0].get_text()
-    city = location.split(",")[0].strip()
-    country = location.split(",")[1].strip()
+    # Calculate Location
+    location = soup.find_all("span", class_='topcard__flavor topcard__flavor--bullet')[0].get_text().split(",")
+    numLocations = len(location)
+    if(numLocations == 0):
+        city = ""
+        country = "United States"
+    elif(numLocations == 1):
+        city = ""
+        country = location[0].strip()
+    elif(numLocations == 2):
+        city = location[0]
+        country = location[1].strip()
+    else:
+        city = location[0] + " " + location[1]
+        country = location[-1].strip()
+
+    if(country.lower() == "us"): country  = "United States"
+    elif(country.lower()  == "uk"): country = "United Kingdom"
+    elif(country.lower()  == "de" or country.lower() == "deutschland"): country = "Germany"
+
+    country = [country]     # Country is actually countries list, so include single country in the list so that front end processes it correctly
+
     # country = location.split(",")[2].strip() 
     description =  soup.find_all("div", class_='description__text')[0]
     criteria =  soup.find_all("span", class_='job-criteria__text job-criteria__text--criteria')
@@ -50,13 +69,13 @@ for url in job_links:
     timeInt = [int(i) for i in timeText.split(" ") if i.isdigit()][0]
     timeString = [i for i in timeText.split(" ") if i]
 
-    if("hours" in timeString):
+    if("hour" in timeString):
         timeMultiplier = 60 * 60
-    elif("days" in timeString):
+    elif("day" in timeString):
         timeMultiplier = 60 * 60 * 24 
-    elif("weeks" in timeString):
+    elif("week" in timeString):
         timeMultiplier = 60 * 60 * 24 * 7
-    elif("months" in timeString):
+    elif("month" in timeString):
         timeMultiplier = 60 * 60 * 24 * 7 * 30
     else:
         ValueError("Could not parse time format from String!")
@@ -65,19 +84,28 @@ for url in job_links:
     numJobs += 1
     # print(description)
     # print(tags)
+
     print(position)
+    print("city ", city)
+    print("country", country)
+        
 
     jobsJSON['listings'].append({
-        "source": "linkedin",
         "id": databaseId,
+        "source": "linkedin",
         "position": position,
         "company": company,
         "city": city,
         "country": country,
+        "maxSalary": "0",   # TODO need to source this data
+        "minSalary": "0",    # TODO need to source this data
+        "currency": "USD",  # TODO need to source this data
+        "language": ["English"],    # TODO need to source this data
         "tags": tags,
         "category": category,
         "epoch": epoch,
         "url": url,
+        "imgUrl": "linkedin",
         "description": str(description)
     })
 
