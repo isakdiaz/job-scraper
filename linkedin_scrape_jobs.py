@@ -17,7 +17,8 @@ print("Processing {} links from {}".format(len(job_links), LINK_LOCATION))
 
 # Use individual job links to scrape data
 
-job_links = ["https://relocateme.eu/jobs/country-de/tech-python/senior-python-engineer-munich-germany-55022/"]
+# url = "https://www.linkedin.com/jobs/view/sponsorship-coordinator-at-live-nation-entertainment-1489576317?refId=bbeb146e-4308-4316-a9b8-31fb9e75d35c&position=1&pageNum=0&trk=guest_job_search_job-result-card_result-card_full-click"
+# url = "https://www.linkedin.com/jobs/view/software-engineer-web-developer-javascript-java-at-sprinklr-1484916244?refId=e6bd7943-e205-4d7e-bdec-f83b19dbf3c1&trk=guest_job_details_topcard_title"
 numJobs = 0
 jobsJSON = {}
 jobsJSON['listings'] = []
