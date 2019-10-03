@@ -3,15 +3,23 @@ from bs4 import BeautifulSoup
 import time
 import numpy as np
 import json 
+import hashlib
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+sys.path.insert(1, '../')
+from utils import convertPositionToCategory, formatTags, formatCountry
 
 # First run scrape_links.py to save the job description links that have been scraped from the website.
 # All job listings from the same company will have the two digit source number preceding the ID.
-LINK_LOCATION = "assets/job_links.npy"
-SOURCE_WEBSITE = "linkedin"
-SOURCE_NUMBER = 55
-ID_SIG_FIGS = 6
 
+SOURCE_WEBSITE = "linkedin"
+SOURCE_NUMBER = 11
+ID_SIG_FIGS = 6
+LINK_LOCATION = "job_links.npy"
+OUT_FILE = SOURCE_WEBSITE + "_data.json"
 job_links = np.load(LINK_LOCATION)
+
+
 
 print("Processing {} links from {}".format(len(job_links), LINK_LOCATION))
 
@@ -23,6 +31,9 @@ numJobs = 0
 jobsJSON = {}
 jobsJSON['listings'] = []
 
+
+job_links = job_links[:5]
+
 for url in job_links:
     # print(url)
     page = requests.get(url)
@@ -32,8 +43,6 @@ for url in job_links:
     position = soup.find_all("h1", class_='topcard__title')[0].get_text()
     # company = soup.find_all("a", class_='topcard__org-name-link')[0].get_text()
     company = soup.find_all("span", class_='topcard__flavor')[0].get_text()
-    hash_multipler = 10 ** ID_SIG_FIGS
-    databaseId = int(hash(position+company) % hash_multipler + SOURCE_NUMBER * hash_multipler)
 
     # Calculate Location
     location = soup.find_all("span", class_='topcard__flavor topcard__flavor--bullet')[0].get_text().split(",")
@@ -51,43 +60,48 @@ for url in job_links:
         city = location[0] + " " + location[1]
         country = location[-1].strip()
 
-    if(country.lower() == "us"): country  = "United States"
-    elif(country.lower()  == "uk"): country = "United Kingdom"
-    elif(country.lower()  == "de" or country.lower() == "deutschland"): country = "Germany"
-
-    country = [country]     # Country is actually countries list, so include single country in the list so that front end processes it correctly
+    country = [formatCountry(country)]     # Country is actually countries list, so include single country in the list so that front end processes it correctly
 
     # country = location.split(",")[2].strip() 
     description =  soup.find_all("div", class_='description__text')[0]
     criteria =  soup.find_all("span", class_='job-criteria__text job-criteria__text--criteria')
     tags = [tag.get_text() for tag in criteria if tag.get_text() != "Not Applicable"]
+    tags =  formatTags(tags)
     # category =  soup.find_all("li", class_='job-criteria__item')[2].get_text()
     category = [tag.get_text() for tag in criteria][2]
     url = url
     # Calculate Epoch time Stamp
     timeText = soup.find_all("span", "posted-time-ago__text")[0].get_text()
     timeInt = [int(i) for i in timeText.split(" ") if i.isdigit()][0]
-    timeString = [i for i in timeText.split(" ") if i]
 
-    if("hour" in timeString):
+
+    if("hour" in timeText):
         timeMultiplier = 60 * 60
-    elif("day" in timeString):
+    elif("day" in timeText):
         timeMultiplier = 60 * 60 * 24 
-    elif("week" in timeString):
+    elif("week" in timeText):
         timeMultiplier = 60 * 60 * 24 * 7
-    elif("month" in timeString):
+    elif("month" in timeText):
         timeMultiplier = 60 * 60 * 24 * 7 * 30
     else:
         ValueError("Could not parse time format from String!")
 
+
+    # print("time text", timeText)
+    # print(timeMultiplier)
     epoch = round(time.time()) - (timeInt * timeMultiplier)
     numJobs += 1
+
     # print(description)
     # print(tags)
+    # print(position)
+    # print("city ", city)
+    # print("country", country)
+    
+    hash_multipler = 10 ** ID_SIG_FIGS
+    jobHash = int(hashlib.md5((position+company+city).encode("utf-8")).hexdigest(), 16)
+    databaseId = (jobHash % hash_multipler + SOURCE_NUMBER * hash_multipler)
 
-    print(position)
-    print("city ", city)
-    print("country", country)
         
 
     jobsJSON['listings'].append({
@@ -108,10 +122,10 @@ for url in job_links:
         "imgUrl": "linkedin",
         "description": str(description)
     })
-
+    print(position, company, city)
     print('Job ID', databaseId)
     
-with open('assets/data.json', 'w') as outfile:
+with open(OUT_FILE, 'w') as outfile:
     json.dump(jobsJSON, outfile)
 
 print("Completed processing {} jobs from {}!".format(numJobs, SOURCE_WEBSITE))
