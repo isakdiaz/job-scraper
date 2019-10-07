@@ -5,6 +5,9 @@ import numpy as np
 import json 
 import hashlib
 import sys
+import re
+import asyncio
+
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '../')
 from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry
@@ -12,6 +15,7 @@ from utils import convertPositionToCategory, convertDescToTags, formatTags, form
 # First run scrape_links.py to save the job description links that have been scraped from the website.
 # All job listings from the same company will have the two digit source number preceding the ID.
 
+SLEEP_PER_REQUEST = 2
 SOURCE_WEBSITE = "indeed"
 SOURCE_NUMBER = 13
 ID_SIG_FIGS = 6
@@ -27,24 +31,84 @@ print("Processing {} links from {}".format(len(job_links), LINK_LOCATION))
 
 # url = "https://www.indeed.com/viewjob?jk=1e13a99883628de9&from=serp&vjs=3"
 numJobs = 0
+companyErrors = 0
 jobsJSON = {}
 jobsJSON['listings'] = []
+descArr = []
 
 
 # job_links = job_links[:1]
 
 for url in job_links:
     print(url)
-    page = requests.get(url)
+
+    try:
+        page = requests.get(url, timeout=1)
+    except requests.exceptions.Timeout:
+        print("Timeout occurred")
 
     soup = BeautifulSoup(page.content, 'html.parser')
+    # Reduce number of requests by sleeping
+    time.sleep(SLEEP_PER_REQUEST) 
 
-    position = soup.find("h3", class_="jobsearch-JobInfoHeader-title").get_text()
-    company = soup.find_all("div", class_="icl-u-lg-mr--sm icl-u-xs-mr--xs")[0].get_text()
+
+    # Error with not finding company name
+    try:
+        position = soup.find("h3", class_="jobsearch-JobInfoHeader-title").get_text()
+        company = soup.find_all("div", class_="icl-u-lg-mr--sm icl-u-xs-mr--xs")[0].get_text()
+        print(position)
+    except:
+        print("Bad Company Name, skipping: {}".format(url))
+        companyErrors += 1
+        continue
+
     locationString = soup.find_all("div", class_="jobsearch-InlineCompanyRating")[0].get_text().split("-")[-1]
     location =  locationString.split(",")
-    description = locationString = soup.find_all("div", class_="jobsearch-jobDescriptionText")[0]
+    description = soup.find_all("div", class_="jobsearch-jobDescriptionText")[0]
 
+    #Save Desc Array
+    descArr.append(description.get_text())
+
+    # Calculate Time Posted   
+    timeText = soup.find("div", class_="jobsearch-JobMetadataFooter").get_text().split(" - ")[1].lower()
+    timeText = re.sub('\W+',' ', timeText ) # Remove Special characters (ussually + e.g "30+ Days")
+    timeArr = timeText.split(" ")
+
+    timeInt = [int(i) for i in timeText.split(" ") if i.isdigit()]
+    timeInt = 1 if(len(timeInt) == 0) else timeInt[0]
+
+    
+
+
+    if("today" in timeText):
+        timeMultiplier = 60 * 60 * 24
+        timeMultiplierText = "today"
+    elif("hour" in timeText):
+        timeMultiplier = 60 * 60
+        timeMultiplierText = "hour"
+    elif("day" in timeText):
+        timeMultiplier = 60 * 60 * 24 
+        timeMultiplierText = "day"
+    elif("week" in timeText):
+        timeMultiplier = 60 * 60 * 24 * 7
+        timeMultiplierText = "week"
+    elif("month" in timeText):
+        timeMultiplier = 60 * 60 * 24 * 7 * 30
+        timeMultiplierText = "month"
+    else:
+        timeMultiplier = 0
+        timeMultiplierText = "Not Available"
+        print("No Time multiplier", timeText)
+
+    print(timeMultiplierText)
+    
+    epoch = round(time.time()) - timeMultiplier * timeInt
+
+    # print(timeText)
+    # print("time int : ", timeInt, "time X", timeMultiplierText)
+    # print(epoch)
+
+    # Calculate Location
     numLocations = len(location)
     if(locationString == 'Remote'):
         city = ""
@@ -69,9 +133,8 @@ for url in job_links:
     category = convertPositionToCategory(position)
     tags = convertDescToTags(description.get_text())
     tags.append(SOURCE_WEBSITE)
-    print(tags)
+    # print(tags)
 
-    epoch = round(time.time())
     numJobs += 1
     
     hash_multipler = 10 ** ID_SIG_FIGS
@@ -98,9 +161,13 @@ for url in job_links:
         "description": str(description)
     })
 
+
+
     
 with open(OUT_FILE, 'w') as outfile:
     json.dump(jobsJSON, outfile)
 
-print("Completed processing {} jobs from {}!".format(numJobs, SOURCE_WEBSITE))
+np.save('indeedDesc.npy', descArr)
+
+print("Completed processing {} jobs from {}! With {} Errors".format(numJobs, SOURCE_WEBSITE, companyErrors))
 
