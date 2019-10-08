@@ -72,3 +72,17 @@ def formatCountry(country):
     elif(tempCountry  == "remote"): country = "Remote"
 
     return country
+
+def formatCountryFromUrl(url, country):
+
+    # Only useful for linked in urls
+    if ("ca.linkedin.com" in url): country = "Canada"
+    elif ("uk.linkedin.com" in url): country = "United Kingdom"
+    elif ("es.linkedin.com" in url): country = "Spain"
+    elif ("nl.linkedin.com" in url): country = "Netherlands"
+    elif ("de.linkedin.com" in url): country = "Germany"
+    elif ("jp.linkedin.com" in url): country = "Japan"
+    elif ("th.linkedin.com" in url): country = "Thailand"
+    elif ("cl.linkedin.com" in url): country = "Chile"
+
+    return country

@@ -8,14 +8,16 @@ import sys
 import re
 import asyncio
 
+
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '../')
+from sa_classifier import classify_array
 from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry
 
 # First run scrape_links.py to save the job description links that have been scraped from the website.
 # All job listings from the same company will have the two digit source number preceding the ID.
 
-SLEEP_PER_REQUEST = 2
+SLEEP_PER_REQUEST = 0
 SOURCE_WEBSITE = "indeed"
 SOURCE_NUMBER = 13
 ID_SIG_FIGS = 6
@@ -35,12 +37,13 @@ companyErrors = 0
 jobsJSON = {}
 jobsJSON['listings'] = []
 descArr = []
-
+totalJobs = len(job_links)
 
 # job_links = job_links[:1]
-
-for url in job_links:
-    print(url)
+count = 0
+visaCount = 0
+for url in job_links[460:]:
+    count += 1
 
     try:
         page = requests.get(url, timeout=1)
@@ -62,9 +65,21 @@ for url in job_links:
         companyErrors += 1
         continue
 
+
+    # Determine if this job sponsor visas using sentiment analysis
+    description = soup.find_all("div", class_="jobsearch-jobDescriptionText")[0]
+    visa_job = classify_array([description.get_text()])[0] # 1 indicates job 
+    # print(visa_job)
+    if not visa_job:
+        # print("Not a visa job")
+        continue
+
+    print(url, "VisaJobs: ", visaCount, " Total: ", count, "/", totalJobs)
+
+    visaCount += 1
     locationString = soup.find_all("div", class_="jobsearch-InlineCompanyRating")[0].get_text().split("-")[-1]
     location =  locationString.split(",")
-    description = soup.find_all("div", class_="jobsearch-jobDescriptionText")[0]
+
 
     #Save Desc Array
     descArr.append(description.get_text())
@@ -100,7 +115,7 @@ for url in job_links:
         timeMultiplierText = "Not Available"
         print("No Time multiplier", timeText)
 
-    print(timeMultiplierText)
+    # print(timeMultiplierText)
     
     epoch = round(time.time()) - timeMultiplier * timeInt
 
@@ -133,7 +148,7 @@ for url in job_links:
     category = convertPositionToCategory(position)
     tags = convertDescToTags(description.get_text())
     tags.append(SOURCE_WEBSITE)
-    # print(tags)
+    # print("city: ", city, " country: ", country)
 
     numJobs += 1
     
