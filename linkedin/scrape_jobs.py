@@ -25,11 +25,9 @@ job_links = np.load(LINK_LOCATION)
 random.shuffle(job_links) # Shuffle randomly links to prevent same server from timing out
 
 
-
 print("Processing {} links from {}".format(len(job_links), LINK_LOCATION))
 
 numJobs = 0
-companyErrors = 0
 jobsJSON = {}
 jobsJSON['listings'] = []
 descArr = []
@@ -40,8 +38,8 @@ visaCount = 0
 badLocation = 0
 badPosition = 0
 badCompany = 0
-badTime = 0
-for url in job_links[:30]:
+
+for url in job_links:
     count += 1
 
     try:
@@ -72,34 +70,29 @@ for url in job_links[:30]:
         continue
     try:
         locationString = soup.find("span", class_="topcard__flavor topcard__flavor--bullet").get_text()
+        location =  locationString.split(",")
         # locationString = soup.find_all("div", class_="jobsearch-InlineCompanyRating")[0].get_text().split("-")[-1]  
     except:
         print("Bad Location Skipping")
         badLocation +=1
         continue
 
-    # Determine if this job sponsor visas using sentiment analysis
+    # Find Description
     description =  soup.find_all("div", class_='description__text')[0]
     descriptionText = description.get_text()
+
+    # Determine if this job sponsor visas using sentiment analysis
     visa_job = classify_array([descriptionText])[0] # 1 indicates job 
     # print(visa_job)
     if not visa_job:
         # print("Not a visa job")
         continue
-
-    print(url)
-    print("VisaJobs: ", visaCount, " Total: ", count, "/", totalJobs)
-
-    visaCount += 1
-    location =  locationString.split(",")
-
-    #Save Desc Array
-    descArr.append(descriptionText)
+    else:
+        visaCount += 1
+    
 
     # Calculate Location
-    location = soup.find_all("span", class_='topcard__flavor topcard__flavor--bullet')[0].get_text().split(",")
     numLocations = len(location)
-
     if(numLocations == 0):
         city = ""
         country = "United States"
@@ -121,26 +114,25 @@ for url in job_links[:30]:
         city = "Bangkok"
         country = ["Thailand"]
 
-    tags = convertDescToTags(descriptionText)
-    print(tags)
-    # criteria =  soup.find_all("span", class_='job-criteria__text job-criteria__text--criteria')
-    # tags = [tag.get_text() for tag in criteria if tag.get_text() != "Not Applicable"]
-    # tags =  formatTags(tags)
-    # category =  soup.find_all("li", class_='job-criteria__item')[2].get_text()
+
     category = convertPositionToCategory(position)
-    url = url
+    tags = convertDescToTags(descriptionText)
+    tags.append(SOURCE_WEBSITE)
+
     # Calculate Epoch time Stamp
     timeText = soup.find_all("span", "posted-time-ago__text")[0].get_text()
-
     epoch = calculateEpoch(timeText.lower())
+
     numJobs += 1
     
+
     hash_multipler = 10 ** ID_SIG_FIGS
     jobHash = int(hashlib.md5((position+company+city).encode("utf-8")).hexdigest(), 16)
     databaseId = (jobHash % hash_multipler + SOURCE_NUMBER * hash_multipler)
-
-
     
+    # SAVE RESULTS
+    descArr.append(descriptionText)
+
     jobsJSON['listings'].append({
         "id": databaseId,
         "source": "linkedin",
@@ -160,7 +152,10 @@ for url in job_links[:30]:
         "description": str(description)
     })
 
-
+    # PRINT STATEMENTS
+    print(url)
+    print("VisaJobs: ", visaCount, " Total: ", count, "/", totalJobs)
+    print(tags)
     print(position)
     print("location: ", location)
     print("city: ", city)
@@ -173,4 +168,4 @@ with open(OUT_FILE, 'w') as outfile:
 np.save('linkedinDesc.npy', descArr)
 
 print("Completed processing {} jobs from {}!".format(numJobs, SOURCE_WEBSITE))
-print("Bad Position {}, Bad Company {}, Bad Location {}, Bad Time {}".format(badPosition, badCompany, badLocation, badTime))
+print("Bad Position {}, Bad Company {}, Bad Location {}".format(badPosition, badCompany, badLocation))

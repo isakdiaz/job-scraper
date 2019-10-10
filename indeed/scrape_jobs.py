@@ -5,10 +5,8 @@ import numpy as np
 import json 
 import hashlib
 import sys
+import random
 import re
-import asyncio
-
-
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '../')
 from sa_classifier import classify_array
@@ -24,6 +22,7 @@ ID_SIG_FIGS = 6
 LINK_LOCATION = "job_links.npy"
 OUT_FILE = SOURCE_WEBSITE + "_data.json"
 job_links = np.load(LINK_LOCATION)
+random.shuffle(job_links) # Shuffle randomly links to prevent same server from timing out
 
 
 
@@ -39,10 +38,9 @@ jobsJSON = {}
 jobsJSON['listings'] = []
 descArr = []
 totalJobs = len(job_links)
-
-# job_links = job_links[:1]
 count = 0
 visaCount = 0
+
 for url in job_links:
     count += 1
 
@@ -58,10 +56,7 @@ for url in job_links:
         continue
 
     soup = BeautifulSoup(page.content, 'html.parser')
-    # Reduce number of requests by sleeping
 
-
-    # Error with not finding company name
     try:
         position = soup.find("h3", class_="jobsearch-JobInfoHeader-title").get_text()        # print(position)
     except:
@@ -77,23 +72,23 @@ for url in job_links:
         badCompany += 1
         continue
 
-    # Determine if this job sponsor visas using sentiment analysis
+    # Find Description
     description = soup.find_all("div", class_="jobsearch-jobDescriptionText")[0]
-    visa_job = classify_array([description.get_text()])[0] # 1 indicates job 
+    descriptionText = description.get_text()
+
+    # Determine if this job sponsor visas using sentiment analysis
+    visa_job = classify_array([descriptionText])[0] # 1 indicates job 
     # print(visa_job)
     if not visa_job:
         print("Not a visa job")
         continue
+    else:
+        visaCount += 1
 
-    print(url, "VisaJobs: ", visaCount, " Total: ", count, "/", totalJobs)
 
-    visaCount += 1
     locationString = soup.find_all("div", class_="jobsearch-InlineCompanyRating")[0].get_text().split("-")[-1]
     location =  locationString.split(",")
 
-
-    #Save Desc Array
-    descArr.append(description.get_text())
 
     # Calculate Time Posted   
     timeText = soup.find("div", class_="jobsearch-JobMetadataFooter").get_text().split(" - ")[1].lower()
@@ -123,10 +118,11 @@ for url in job_links:
     # Functions
     country = [formatCountry(country)]     # Country is actually countries list, so include single country in the list so that front end processes it correctly
     city = "" if city == country[0] else city
+    
     category = convertPositionToCategory(position)
-    tags = convertDescToTags(description.get_text())
+    tags = convertDescToTags(descriptionText)
     tags.append(SOURCE_WEBSITE)
-    # print("city: ", city, " country: ", country)
+
 
     numJobs += 1
     
@@ -134,6 +130,8 @@ for url in job_links:
     jobHash = int(hashlib.md5((position+company+city).encode("utf-8")).hexdigest(), 16)
     databaseId = (jobHash % hash_multipler + SOURCE_NUMBER * hash_multipler)
 
+    # SAVE RESULTS
+    descArr.append(descriptionText)
     
     jobsJSON['listings'].append({
         "id": databaseId,
@@ -154,7 +152,9 @@ for url in job_links:
         "description": str(description)
     })
 
-
+    # PRINT STATEMENTS
+    print(url, "VisaJobs: ", visaCount, " Total: ", count, "/", totalJobs)
+    # print("city: ", city, " country: ", country)
 
     
 with open(OUT_FILE, 'w') as outfile:

@@ -116,12 +116,12 @@ def formatCountryFromUrl(url, country):
     return country
 
 def calculateTimeMultipler(timeText):
-    # English, German, Dutch & Japanese included
-    today = ['today', 'heute', 'vandaag', 'hoy', '今日']
-    hour = ['hour', 'stunde', 'uur', 'hora', '時']
-    day = ['day', 'tag', 'dag', 'dia', '日']
-    week =  ['week', 'woche', 'weken', 'semana', '週間']
-    month = ['month', 'monat', 'maand', 'mes', '月']
+    # English, German, Dutch, Japanese & Thai included
+    today = ['today', 'heute', 'vandaag', 'hoy', '今日', 'ในวันนี้']
+    hour = ['hour', 'stunde', 'uur', 'hora', '時', "ชั่วโมง"]
+    day = ['day', 'tag', 'dag', 'dia', '日', 'วัน']
+    week =  ['week', 'woche', 'weken', 'semana', '週間', 'สัปดาห์']
+    month = ['month', 'monat', 'maand', 'mes', '月', 'เดือน']
     print(timeText)
     for word in today:
         if word in timeText:
