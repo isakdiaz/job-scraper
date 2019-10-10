@@ -12,12 +12,12 @@ import asyncio
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '../')
 from sa_classifier import classify_array
-from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry
+from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry, calculateEpoch
 
 # First run scrape_links.py to save the job description links that have been scraped from the website.
 # All job listings from the same company will have the two digit source number preceding the ID.
 
-SLEEP_PER_REQUEST = 0
+SLEEP_PER_REQUEST = 3
 SOURCE_WEBSITE = "indeed"
 SOURCE_NUMBER = 13
 ID_SIG_FIGS = 6
@@ -33,7 +33,8 @@ print("Processing {} links from {}".format(len(job_links), LINK_LOCATION))
 
 # url = "https://www.indeed.com/viewjob?jk=1e13a99883628de9&from=serp&vjs=3"
 numJobs = 0
-companyErrors = 0
+badCompany = 0
+badPosition = 0
 jobsJSON = {}
 jobsJSON['listings'] = []
 descArr = []
@@ -42,36 +43,46 @@ totalJobs = len(job_links)
 # job_links = job_links[:1]
 count = 0
 visaCount = 0
-for url in job_links[460:]:
+for url in job_links:
     count += 1
 
     try:
-        page = requests.get(url, timeout=1)
+        page = requests.get(url, timeout=SLEEP_PER_REQUEST)
+        time.sleep(SLEEP_PER_REQUEST) # Reduce likelihood of timeot Error
+        print("requesting page")
     except requests.exceptions.Timeout:
         print("Timeout occurred")
+        continue
+    except:
+        print("Other Exception Occured!")
+        continue
 
     soup = BeautifulSoup(page.content, 'html.parser')
     # Reduce number of requests by sleeping
-    time.sleep(SLEEP_PER_REQUEST) 
 
 
     # Error with not finding company name
     try:
-        position = soup.find("h3", class_="jobsearch-JobInfoHeader-title").get_text()
-        company = soup.find_all("div", class_="icl-u-lg-mr--sm icl-u-xs-mr--xs")[0].get_text()
-        print(position)
+        position = soup.find("h3", class_="jobsearch-JobInfoHeader-title").get_text()        # print(position)
     except:
-        print("Bad Company Name, skipping: {}".format(url))
-        companyErrors += 1
+        print("Bad Position Name, skipping: {}".format(url))
+        badPosition += 1
         continue
 
+    try:
+        company = soup.find_all("div", class_="icl-u-lg-mr--sm icl-u-xs-mr--xs")[0].get_text()
+        # print(position)  
+    except:
+        print("Bad Company Name, skipping: {}".format(url))
+        badCompany += 1
+        continue
 
     # Determine if this job sponsor visas using sentiment analysis
     description = soup.find_all("div", class_="jobsearch-jobDescriptionText")[0]
     visa_job = classify_array([description.get_text()])[0] # 1 indicates job 
     # print(visa_job)
     if not visa_job:
-        # print("Not a visa job")
+        print("Not a visa job")
         continue
 
     print(url, "VisaJobs: ", visaCount, " Total: ", count, "/", totalJobs)
@@ -86,42 +97,9 @@ for url in job_links[460:]:
 
     # Calculate Time Posted   
     timeText = soup.find("div", class_="jobsearch-JobMetadataFooter").get_text().split(" - ")[1].lower()
-    timeText = re.sub('\W+',' ', timeText ) # Remove Special characters (ussually + e.g "30+ Days")
-    timeArr = timeText.split(" ")
+    epoch = calculateEpoch(timeText)
+    # timeText = re.sub('\W+',' ', timeText ) # Remove Special characters (ussually + e.g "30+ Days")
 
-    timeInt = [int(i) for i in timeText.split(" ") if i.isdigit()]
-    timeInt = 1 if(len(timeInt) == 0) else timeInt[0]
-
-    
-
-
-    if("today" in timeText):
-        timeMultiplier = 60 * 60 * 24
-        timeMultiplierText = "today"
-    elif("hour" in timeText):
-        timeMultiplier = 60 * 60
-        timeMultiplierText = "hour"
-    elif("day" in timeText):
-        timeMultiplier = 60 * 60 * 24 
-        timeMultiplierText = "day"
-    elif("week" in timeText):
-        timeMultiplier = 60 * 60 * 24 * 7
-        timeMultiplierText = "week"
-    elif("month" in timeText):
-        timeMultiplier = 60 * 60 * 24 * 7 * 30
-        timeMultiplierText = "month"
-    else:
-        timeMultiplier = 0
-        timeMultiplierText = "Not Available"
-        print("No Time multiplier", timeText)
-
-    # print(timeMultiplierText)
-    
-    epoch = round(time.time()) - timeMultiplier * timeInt
-
-    # print(timeText)
-    # print("time int : ", timeInt, "time X", timeMultiplierText)
-    # print(epoch)
 
     # Calculate Location
     numLocations = len(location)
@@ -184,5 +162,5 @@ with open(OUT_FILE, 'w') as outfile:
 
 np.save('indeedDesc.npy', descArr)
 
-print("Completed processing {} jobs from {}! With {} Errors".format(numJobs, SOURCE_WEBSITE, companyErrors))
-
+print("Completed processing {} jobs from {}!".format(numJobs, SOURCE_WEBSITE))
+print("Bad Position {}, Bad company {} Errors".format(badPosition, badCompany))

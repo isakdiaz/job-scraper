@@ -5,21 +5,24 @@ import numpy as np
 import json 
 import hashlib
 import sys
+import random
+import re
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '../')
 from sa_classifier import classify_array
-from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry, formatCountryFromUrl
+from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry, formatCountryFromUrl, calculateEpoch
 
 # First run scrape_links.py to save the job description links that have been scraped from the website.
 # All job listings from the same company will have the two digit source number preceding the ID.
 
-SLEEP_PER_REQUEST = 5
+SLEEP_PER_REQUEST = 2
 SOURCE_WEBSITE = "linkedin"
 SOURCE_NUMBER = 11
 ID_SIG_FIGS = 6
 LINK_LOCATION = "job_links.npy"
 OUT_FILE = SOURCE_WEBSITE + "_data.json"
 job_links = np.load(LINK_LOCATION)
+random.shuffle(job_links) # Shuffle randomly links to prevent same server from timing out
 
 
 
@@ -38,16 +41,21 @@ badLocation = 0
 badPosition = 0
 badCompany = 0
 badTime = 0
-for url in job_links:
+for url in job_links[:30]:
     count += 1
 
     try:
-        page = requests.get(url, timeout=1)
+        page = requests.get(url, timeout=3)
+        time.sleep(SLEEP_PER_REQUEST) 
     except requests.exceptions.Timeout:
         print("Timeout occurred")
+        continue
+    except:
+        print("Other Exception Occured!")
+        continue
 
     soup = BeautifulSoup(page.content, 'html.parser')
-    time.sleep(SLEEP_PER_REQUEST) 
+
 
     try:
         position = soup.find_all("h1", class_='topcard__title')[0].get_text()
@@ -72,7 +80,8 @@ for url in job_links:
 
     # Determine if this job sponsor visas using sentiment analysis
     description =  soup.find_all("div", class_='description__text')[0]
-    visa_job = classify_array([description.get_text()])[0] # 1 indicates job 
+    descriptionText = description.get_text()
+    visa_job = classify_array([descriptionText])[0] # 1 indicates job 
     # print(visa_job)
     if not visa_job:
         # print("Not a visa job")
@@ -85,7 +94,7 @@ for url in job_links:
     location =  locationString.split(",")
 
     #Save Desc Array
-    descArr.append(description.get_text())
+    descArr.append(descriptionText)
 
     # Calculate Location
     location = soup.find_all("span", class_='topcard__flavor topcard__flavor--bullet')[0].get_text().split(",")
@@ -107,41 +116,23 @@ for url in job_links:
     country = formatCountryFromUrl(url, country)     # Country is actually countries list, so include single country in the list so that front end processes it correctly
     country = [formatCountry(country)] # Change abbrvs to full names
     
-    if("bangkok" in position.lower()): # Special case for Agoda Listings
+    # Special case for Agoda who likes to SPAM bangkok listings
+    if("bangkok" in position.lower() or 'bangkok' in descriptionText.lower()): 
         city = "Bangkok"
         country = ["Thailand"]
 
-    # country = location.split(",")[2].strip() 
-    criteria =  soup.find_all("span", class_='job-criteria__text job-criteria__text--criteria')
-    tags = [tag.get_text() for tag in criteria if tag.get_text() != "Not Applicable"]
-    tags =  formatTags(tags)
+    tags = convertDescToTags(descriptionText)
+    print(tags)
+    # criteria =  soup.find_all("span", class_='job-criteria__text job-criteria__text--criteria')
+    # tags = [tag.get_text() for tag in criteria if tag.get_text() != "Not Applicable"]
+    # tags =  formatTags(tags)
     # category =  soup.find_all("li", class_='job-criteria__item')[2].get_text()
-    category = [tag.get_text() for tag in criteria][2]
+    category = convertPositionToCategory(position)
     url = url
     # Calculate Epoch time Stamp
     timeText = soup.find_all("span", "posted-time-ago__text")[0].get_text()
-    try:
-        timeInt = [int(i) for i in timeText.split(" ") if i.isdigit()][0]
-    except:
-        print("time string", timeText)
-        print("failed on time int: ", [int(i) for i in timeText.split(" ") if i.isdigit()])
-        badTime +=1
-        continue
 
-
-    if("hour" in timeText):
-        timeMultiplier = 60 * 60
-    elif("day" in timeText):
-        timeMultiplier = 60 * 60 * 24 
-    elif("week" in timeText):
-        timeMultiplier = 60 * 60 * 24 * 7
-    elif("month" in timeText):
-        timeMultiplier = 60 * 60 * 24 * 7 * 30
-    else:
-        ValueError("Could not parse time format from String!")
-
-
-    epoch = round(time.time()) - (timeInt * timeMultiplier)
+    epoch = calculateEpoch(timeText.lower())
     numJobs += 1
     
     hash_multipler = 10 ** ID_SIG_FIGS
