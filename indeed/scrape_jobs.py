@@ -40,6 +40,7 @@ descArr = []
 totalJobs = len(job_links)
 count = 0
 visaCount = 0
+remote = False
 
 for url in job_links:
     count += 1
@@ -116,8 +117,10 @@ for url in job_links:
         country = location[-1].strip()
     
     # Functions
+    print(country)
     country = [formatCountry(country)]     # Country is actually countries list, so include single country in the list so that front end processes it correctly
     city = "" if city == country[0] else city
+    print(country)
     
     category = convertPositionToCategory(position)
     tags = convertDescToTags(descriptionText)
@@ -149,6 +152,8 @@ for url in job_links:
         "epoch": epoch,
         "url": url,
         "imgUrl": SOURCE_WEBSITE,
+        "visa": True,
+        "remote": remote,
         "description": str(description)
     })
 

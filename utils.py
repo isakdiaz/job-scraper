@@ -1,5 +1,5 @@
 import time
-
+import re
 
 def convertPositionToCategory(position):
     
@@ -29,47 +29,10 @@ def convertDescToTags(desc):
 
     #Desc must be in text format
 
-    keywords = ["accessibility","active-directory","activemq","aem","agile","airflow","akka","algorithm","amazon-dynamodb","amazon-ec2",\
-        "amazon-web-services","analytics","android","android-framework","android-jetpack","angular","angular-universal","angular7", \
-        "angular8","angularjs","ansible","apache-kafka","apache-spark","apex","api","appium","architecture","artificial-intelligence", \
-        "ase","atg","audit","autolayout","automated-deployment","automated-tests","automation","aws","aws-iam","aws-lambda","azure", \
-        "azure-devops","backend","bamboo","bash","bazel","bdd","bigdata","blockchain","bluetooth","bluetooth-lowenergy","boost", \
-        "business-intelligence","butterknife","c","c++","c++11","c++14","c++17","calypso","cassandra","circleci", "circuit-breaker", \
-        "clojure","cloud","cmake","cocoa","cocoapods","coldfusion","common-lisp","concurrency","confluence","connectivity", \
-        "content-management-system","continuous-delivery","continuous-deployment","continuous-integration","cordova","core-bluetooth", \
-        "cpu","cryptography","csdl","css","css3","cucumber","dagger-2","data","data-modeling","data-processing","data-science", \
-        "data-structures","data-warehouse","database","database-design","databricks","dataflow","debugging","deep-learning", \
-        "dependency-injection","design","design-patterns","detox","device-management","devops","directx","distributed-computing",\
-        "distributed-system","django","docker","domain-driven-design","drm","e-commerce","ecmascript-6","elasticsearch","elixir","elk","elm",\
-        "embedded","erp","es2015","ethereum","etl","event-sourcing","excel","expert-system","fastlane","filesystems","finance","firmware", \
-        "flask","flask-sqlalchemy","flux","frontend","functional-programming","gcp","gem5","gin-gonic","git","github","gitlab","go","goland",\
-        "golang","golang-migrate","google-analytics","google-app-engine","google-bigquery","google-cloud-dataflow","google-cloud-platform", \
-        "google-data-studio","graalvm","gradle","graphic-design","graphics","graphql","groovy","grpc","hadoop","heroku","hibernate","hpc",\
-        "hsm","html","html5","http","hybrid-mobile-app","hybris","ida","influxdb","informatica","infrastructure","infrastructure-as-a-code", \
-        "integration","interaction-design","interface-builder","ionic-framework","ios","iphone","iso","istio","itil","java","java-8","java-ee", \
-        "javafx","javascript","jenkins","jira","jquery","js","jsp","junit","jvm","kafka","kdb","keras","kerberos","kotlin","kubernetes","lambda", \
-        "lamp","laravel","lead","leader","libraries","linux","low-latency","lucene","lxc","machine-learning","macos","mapr","mapreduce", \
-        "mariadb","matillion","matlab","maven","measurement","memcached","micro-frontend","microcontroller","microfrontend","microservices", \
-        "microsoft-dynamics-nav","microsoft-test-manager","middleware","mobile","mockups","model-view-controller","mongodb","mqtt","multicast", \
-        "multithreading","mvp","mvvm","mysql","netbeans","network-analysis","networking","next","ngrx","nlp","nosql","objective-c","office365", \
-        "oop","open-source","opencart","opencl","opengl","openshift","openssl","operating-system","oracle","packer","pageobjects","pandas", \
-        "penetration-testing","perl","php","php-7","phpunit","playframework","plsql","polymer","postgresql","powerbi","powershell","presto", \
-        "procedural-generation","product","product-management","project-management","prometheus","protocol-buffers","puppet","pyramid","pyspark", \
-        "pytest","python","qa","qnx","qt","r","rabbitmq","raspberry-pi","react","react-native","react-native-android","react-redux", \
-        "reactive-programming","reactjs","redis","redux","rendering","rest","restful-architecture","retrofit","retrofit2","reverse-engineering", \
-        "robotics","routing","rtos","ruby","ruby-on-rails","ruby-on-rails-5","rust","rx-java","rx-kotlin","rx-swift","rxjs","rxswift","saas", \
-        "salesforce","sass","scala","scale","scheme","scripting","scrum","scrumboard","scss","sdk","security","selenium","selenium-webdriver", \
-        "sentiment-analysis","sequence","serverless","shell","sidekiq","software-design","software-quality","solid-principles","solidity", \
-        "spark","spark-streaming","splunk","spreadsheet","spring","spring-boot","spring-mvc","sprint","sql","sql-loader","sql-server","sre",\
-        "static-analysis","statistics","streaming","substrate","swift","swiftui","swing","swt","symfony","symfony2","sysadmin","system",\
-        "system-design","system-integration","tableau","tdd","tensorflow","teradata","terraform","testing","text-classification","tooling",\
-        "topic-modeling","truffle","twitter-bootstrap","types","typescript","ubuntu","uikit","uml","unit-testing","unity3d","unix",\
-        "unreal-engine4","user-experience","user-interaction","user-interface","user-stories","virtual-machine","vpc","vulkan","warehouse",\
-        "wcag","web-application-design","web-applications","web-component","web-services","webassembly","webgl","webpack","websocket","wechat",\
-        "wifi","windows","wordpress","xcode","yii2"]
+    keywords = [".net",".net core","active directory","activemq","administration","aem","agile","airflow","akka","algorithm","amazon dynamodb","amazon ec2","amazon web services","analytics","android","android framework","android jetpack","angular","angular universal","angular7","angular8","angularjs","ansible","apache","apache kafka","apache spark","apex","api","appium","architecture","artificial intelligence","ase","asp.net web api","atg","audit","automated deployment","automated tests","automation","aws","aws iam","aws lambda","azure","azure devops","backbone.js","backend","bamboo","bash","bazel","bdd","bigdata","blockchain","bluetooth","bluetooth lowenergy","boost","business intelligence","butterknife","c","c++","c++11","c++14","c++17","cassandra","circleci","circuit breaker","clojure","cloud","cmake","cocoa","cocoapods","coldfusion","common lisp","confluence","connectivity","containers","content management system","continuous delivery","continuous deployment","continuous integration","cordova","core bluetooth","cpu","cryptography","csdl","css","css3","cucumber","d3.js","dagger 2","data","data modeling","data processing","data science","data structures","data warehouse","database","database design","databricks","dataflow","debugging","dependency injection","design","design patterns","detox","device management","devops","directx","distributed computing","distributed system","django","docker","domain driven design","drm","e commerce","ecmascript 6","elasticsearch","elixir","elk","elm","embedded","embedded linux","ember.js","erp","es2015","ethereum","etl","event sourcing","excel","expert system","fastlane","filesystems","finance","flask","flask sqlalchemy","flux","frontend","functional programming","gcp","gem5","gin gonic","git","github","gitlab","go","goland","golang","google analytics","google app engine","google bigquery","google cloud dataflow","google cloud platform","google data studio","graalvm","gradle","graphic design","graphics","graphql","groovy","grpc","h.265","hadoop","heroku","hibernate","hpc","hsm","html","html5","http","hybrid mobile app","hybris","ida","influxdb","informatica","infrastructure","infrastructure as a code","integration","interaction design","ios","iphone","iso","istio","itil","jasmine","java","java 8","java ee","javafx","javascript","jenkins","jira","jquery","js","jsp","junit","jvm","kafka","kdb","keras","kerberos","kotlin","kubernetes","lambda","lead","leader","less","libraries","linux","low latency","lucene","machine learning","macos","mapr","mapreduce","mariadb","matlab","maven","measurement","memcached","micro frontend","microfrontend","microservices","microsoft dynamics nav","microsoft test manager","middleware","mobile","mockups","model view controller","mongodb","mqtt","multicast","multiplatform","multithreading","mvvm","mysql","netbeans","network analysis","networking","next","next.js","ngrx","nlp","node.js","nosql","numpy","objective c","office365","oop","open source","opencart","opencl","opengl","openshift","openssl","operating system","oracle","packer","pageobjects","pandas","penetration testing","perl","php","php 7","phpunit","playframework","plsql","polymer","postgresql","powerbi","powershell","presto","procedural generation","product","product management","project management","prometheus","protocol buffers","puppet","pyramid","pyspark","pytest","python","python 3.x","qa","qnx","qt","r","rabbitmq","raspberry pi","react","react.js","react native","react native android","react redux","reactive programming","reactjs","redis","redux","rendering","rest","restful architecture","retrofit","retrofit2","reverse engineering","robotics","ror","routing","rtos","ruby","ruby on rails","ruby on rails 3","ruby on rails 5","rust","rx java","rx kotlin","rx swift","rxjs","rxswift","saas","salesforce","sass","scala","scale","scheme","scikit learn","scripting","scrum","scrumboard","scss","sdk","security","selenium","selenium webdriver","semantic web","sentiment analysis","sequence","server","serverless","shell","sidekiq","smarty","software design","software quality","solid principles","solidity","spark","spark streaming","splunk","spreadsheet","spring","spring boot","spring mvc","sprint","sql","sql loader","sql server","sre","static analysis","statistics","streaming","substrate","swift","swiftui","swing","swt","symfony","sysadmin","system","system design","system integration","tableau","tdd","tensorflow","teradata","terraform","testing","text classification","tooling","topic modeling","truffle","twitter bootstrap","types","typescript","ubuntu","uikit","uml","unit testing","unity3d","unix","unreal engine4","user experience","user interaction","user interface","user stories","virtual machine","vpc","vue.js","vulkan","warehouse","web application design","web applications","web component","web services","webassembly","webgl","webpack","webrtc","websocket","wechat","wifi","windows","wordpress","xcode","yii2"]
 
-    keywordsWithSpaces = [word.replace("-", " ") for word in keywords] # Convert dashes to spaces
-    tags = [word.replace(" ", "-") for word in keywordsWithSpaces if word in desc.lower() and len(word) > 1]
+    # keywordsWithSpaces = [word.replace("-", " ").replace(",", ".")  for word in keywords] # Convert dashes to spaces
+    tags = [word.replace(" ", "-").replace(".", ",") for word in keywords if word in desc.lower() and len(word) > 1]
 
     return list(dict.fromkeys(tags))
 
@@ -77,7 +40,7 @@ def convertDescToTags(desc):
 def formatTags(tags):
     result = []
     for tag in tags:
-        tempTag = tag.lower().replace(" ", "-")
+        tempTag = tag.lower().replace(" ", "-").replace(".", ",")
         if("react" in tempTag): tempTag = "react"
         if("python" in tempTag): tempTag = "python"
         if("angular" in tempTag): tempTag = "angular"
@@ -91,7 +54,7 @@ def formatCountry(country):
     states = ["alabama","alaska","arizona","arkansas","california","colorado","connecticut","delaware","florida","georgia","hawaii","idaho","illinois","indiana","iowa","kansas","kentucky","louisiana","maine","maryland","massachusetts","michigan","minnesota","mississippi","missouri","montana","nebraska","nevada","new hampshire","new jersey","new mexico","new york","north carolina","north dakota","ohio","oklahoma","oregon","pennsylvania","rhode island","south carolina","south dakota","tennessee","texas","utah","vermont","virginia","washington","west virginia","wisconsin","wyoming"]
     stateabbrs = ["al","ak","az","ar","ca","co","ct","de","fl","ga","hi","id","il","in","ia","ks","ky","la","me","md","ma","mi","mn","ms","mo","mt","ne","nv","nh","nj","nm","ny","nc","nd","oh","ok","or","pa","sc","ri","sd","tn","tx","ut","vt","va","wa","wv","wi","wy"]
     
-    tempCountry =  country.lower()
+    tempCountry =  re.sub('\d',' ', country).lower().strip() # REGEX - only chars & spaces
     if (tempCountry in states or tempCountry in stateabbrs): country = "United States" #TODO CA can be canada and DE can be germany
     elif(tempCountry == "us" or tempCountry == "usa"): country  = "United States"
     elif(tempCountry  == "uk"): country = "United Kingdom"

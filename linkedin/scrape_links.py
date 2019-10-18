@@ -14,7 +14,8 @@ locations = ['Canada', 'Chile', 'Germany', 'Japan', 'Netherlands', 'Spain', 'Tha
 tags = [tag.replace(" ","%20") for tag in tags]
 keywords = [keyword.replace(" ","%20") for keyword in keywords]
 locations = [location.replace(" ","%20") for location in locations]
-f_TP = [1,2,3] # Page thats starts with most recent to least recent
+# f_TP = [1,2,3] # Page thats starts with most recent to least recent
+f_TP = [1] # Only the most recent page
 
 urls = []
 for key in keywords:

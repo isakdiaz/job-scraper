@@ -60,7 +60,7 @@ for url in job_links:
     # No time stamp found on website. Using current time as best guess
     # Database will have to be set not to update results or else new updates will float to top
     # with new time stamps
-    epoch = round(time.time()) 
+    epoch = round(time.time() - 60*60*24)
 
     numJobs += 1
     

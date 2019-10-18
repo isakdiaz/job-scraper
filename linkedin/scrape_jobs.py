@@ -149,6 +149,7 @@ for url in job_links:
         "epoch": epoch,
         "url": url,
         "imgUrl": "linkedin",
+        "visa": True,
         "description": str(description)
     })
 
