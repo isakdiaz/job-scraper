@@ -19,6 +19,8 @@ def convertPositionToCategory(position):
         category = "Full-Stack"
     elif("qa" in tempPos or "quality analysis" in tempPos):
         category = "Quality-Analysis"
+    elif("mobile" in tempPos or "android" in tempPos or "ios" in tempPos):
+        category = "Mobile"
     else:
         category = "Developer"
         
@@ -66,7 +68,7 @@ def formatCountry(country):
 
 def formatCountryFromUrl(url, country):
 
-    # Only useful for linked in urls
+    #  LinkedIn
     if ("ca.linkedin.com" in url): country = "Canada"
     elif ("uk.linkedin.com" in url): country = "United Kingdom"
     elif ("es.linkedin.com" in url): country = "Spain"
@@ -75,6 +77,11 @@ def formatCountryFromUrl(url, country):
     elif ("jp.linkedin.com" in url): country = "Japan"
     elif ("th.linkedin.com" in url): country = "Thailand"
     elif ("cl.linkedin.com" in url): country = "Chile"
+    # Indeed
+    elif ("au.indeed.com" in url): country = "Australia"
+    elif ("ca.indeed.com" in url): country = "Canada"
+    elif ("ar.indeed.com" in url): country = "Argentina"
+    elif ("nz.indeed.com" in url): country = "New Zealand"
 
     return country
 

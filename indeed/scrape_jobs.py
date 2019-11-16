@@ -10,7 +10,7 @@ import re
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '../')
 from sa_classifier import classify_array
-from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry, calculateEpoch
+from utils import convertPositionToCategory, convertDescToTags, formatTags, formatCountry, formatCountryFromUrl, calculateEpoch
 
 # First run scrape_links.py to save the job description links that have been scraped from the website.
 # All job listings from the same company will have the two digit source number preceding the ID.
@@ -118,7 +118,7 @@ for url in job_links:
     
     # Functions
     print(country)
-    country = [formatCountry(country)]     # Country is actually countries list, so include single country in the list so that front end processes it correctly
+    country = [formatCountryFromUrl(url, formatCountry(country))]     # Country is actually countries list, so include single country in the list so that front end processes it correctly
     city = "" if city == country[0] else city
     print(country)
     
@@ -162,10 +162,11 @@ for url in job_links:
     # print("city: ", city, " country: ", country)
 
     
-with open(OUT_FILE, 'w') as outfile:
-    json.dump(jobsJSON, outfile)
+    
+    with open(OUT_FILE, 'w') as outfile:
+        json.dump(jobsJSON, outfile)
 
-np.save('indeedDesc.npy', descArr)
+    np.save('indeedDesc.npy', descArr)
 
 print("Completed processing {} jobs from {}!".format(numJobs, SOURCE_WEBSITE))
 print("Bad Position {}, Bad company {} Errors".format(badPosition, badCompany))
